@@ -17,4 +17,18 @@
 
 #define macro MAIN() = takes(0) returns(0) {
 
+    0x00 calldataload 0xe0 shr  // [func_sig]
+
+    dup1 __FUNC_SIG(foo) eq foo jumpi
+    dup1 __FUNC_SIG(bar) eq bar jumpi
+
+    0x00 0x00 revert
+
+    foo:
+        0x02 0x00 mstore // Store 2 in memory at offset 0
+        0x20 0x00 return // return 2
+    bar:
+        0x03 0x00 mstore // Store 3 in memory at offset 0
+        0x20 0x00 return // return 3
+
 }

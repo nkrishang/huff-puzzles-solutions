@@ -28,6 +28,10 @@ contract MultiplyTest is Test, NonMatchingSelectorHelper {
         }
     }
 
+    // function testMultiplySimple() public {
+    //     assertEq(multiply.multiply(0, 75662), 3, "Wrong result for Multiply(2, 3)");
+    // }
+
     /// @notice Test that a non-matching selector reverts
     function testNonMatchingSelector(bytes32 callData) public {
         bytes4[] memory func_selectors = new bytes4[](1);

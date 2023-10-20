@@ -9,6 +9,41 @@
 
 #define function maxOfArray(uint256[]) payable returns(uint256)
 
+#define macro MAX_OFF_ARRAY() = takes(0) returns(0) {
+    0x04 calldataload 0x04 add // [offset]
+    dup1 calldataload returndatasize returndatasize   // [current_index=0, current_element=0, length, offset]
+
+    dup3 iszero empty jumpi
+    
+    loop:
+        dup1 dup4 eq ret jumpi // If currentIndex == length, return currentElement
+
+        0x01 add // [new_index, current_element, length, offset]
+        dup1 0x20 mul // [factor, new_index, current_element, length, offset]
+        dup5 add calldataload // [next_element, new_index, current_element, length, offset]
+
+        dup3 dup2 gt swapElement jumpi // If nextElement > currentElement, swap them
+
+        pop
+        loop jump
+    ret:
+        swap1 returndatasize mstore // store max number in memory at offset 0
+        0x20 returndatasize return
+    swapElement:
+        swap2 pop // [new_index, next_element, length, offset]        
+        loop jump
+    empty:
+        0x00 0x00 revert
+}
+
 #define macro MAIN() = takes(0) returns(0) {
-   
+    
+    0x00 calldataload 0xe0 shr // [func_sig]
+
+    dup1 __FUNC_SIG(maxOfArray) eq maxOfArrayImpl jumpi
+
+    0x00 0x00 revert
+
+    maxOfArrayImpl:
+        MAX_OFF_ARRAY()
 }

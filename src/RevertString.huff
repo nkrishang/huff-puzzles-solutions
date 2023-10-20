@@ -13,5 +13,9 @@
 
 
 #define macro MAIN() = takes(0) returns(0) {
-    
+    0x20 returndatasize mstore // store the offset of the length of string
+    0x09 0x20 mstore // store length of string
+    __RIGHTPAD(0x4f6e6c792048756666) 0x40 mstore // store the utf-8 hex string
+
+    0x60 returndatasize revert // revert with the string
 }

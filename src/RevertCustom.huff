@@ -14,5 +14,6 @@
 #define error OnlyHuff()
 
 #define macro MAIN() = takes(0) returns(0) {
-    
+    __ERROR(OnlyHuff) returndatasize mstore    // store the error in memory at offset 0
+    0x20 0x00 revert                           // revert with stored error
 }

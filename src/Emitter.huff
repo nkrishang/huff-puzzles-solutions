@@ -7,11 +7,36 @@
  *  NOTICE: The contract should revert when an unrecognized function is called
  */
 
- #define function value(uint256, uint256) payable returns()
+#define function value(uint256, uint256) payable returns()
  
- #define event Value(uint256 indexed, uint256)
+#define event Value(uint256 indexed, uint256)
 
 
- #define macro MAIN() = takes(0) returns(0) {
+#define macro MAIN() = takes(0) returns(0) {
+  
+    returndatasize calldataload 0xe0 shr // [func selector]
+
+    __FUNC_SIG(value) eq valueJump jumpi
+
+    returndatasize dup1 revert
+
+    valueJump:
+      VALUE()
+
+    returndatasize dup1 revert
+}
+
+#define macro VALUE() = takes(0) returns(0) {  
     
- }
+    // Note how the second argument is not `indexed` i.e. is not a topic of the LOG, but part of the log's raw data.
+    // We store this raw data in memory, and pass address it (i.e. pass its offset + length) to the `log2` opcode.
+    0x24 calldataload 0x00 mstore // store arg_2 in memory at offset 0
+
+    0x04 calldataload // [arg_1] load arg_1 to the stack. Since it is `indexed` in the event, we must pass it as a topic.
+     
+    __EVENT_HASH(Value) // [event_hash, arg_1] event hash is always topic0
+
+    0x20 0x00 log2 // Emit event topic0=event_hash (always) topic1=arg_1, memory[offset:offset+len]=arg_2 (raw data) 
+
+    returndatasize returndatasize return
+}

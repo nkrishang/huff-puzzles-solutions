@@ -13,4 +13,72 @@
 
 #define macro MAIN() = takes(0) returns(0) {
 
+    returndatasize calldataload 0xe0 shr // [func_sig]
+
+    dup1 __FUNC_SIG(balanceOf) eq balanceOfJump jumpi
+    dup1 __FUNC_SIG(withdraw) eq withdrawJump jumpi
+
+    receiveJump jump
+
+    balanceOfJump:
+        BALANCE_OF()
+    withdrawJump:
+        WITHDRAW()
+    receiveJump:
+        RECEIVE()
+
+    0x00 0x00 revert
+}
+
+#define macro GET_SLOT() = takes(1) returns(1) {
+    // input: [address]
+    // output:[storage_slot] i.e. balanceOf[address] storage slot
+
+    0x00 mstore // [] store caller in memory at offset zero
+    0x20 0x00 sha3 // [sha3(caller) i.e. storage_slot] 
+}
+
+#define macro SEND_ETHER() = takes(1) returns(0) {
+    // input: [value]
+
+    returndatasize returndatasize returndatasize returndatasize // [argOffset, argSize, retOffset, retSize, value]
+    swap4 // [value, argOffset, argSize, retOffset, retSize]
+    caller 0x5208 // [gas, address, value, argOffset, argSize, retOffset, retSize]
+    call
+}
+
+#define macro BALANCE_OF() = takes(0) returns(0) {
+    0x04 calldataload // [address]
+    GET_SLOT() // [storage_slot]
+    sload // [balance]
+
+    0x00 mstore // store balance in memory at offset 0
+    0x20 0x00 return // return balance
+}
+
+#define macro WITHDRAW() = takes(0) returns(0) {
+    caller GET_SLOT() sload // [balance]
+    0x04 calldataload // [withdraw_amt, balance]
+    dup2 dup2 gt ret jumpi // [withdraw_amt, balance] if withdraw_amt > balance, revert
+
+    swap1 dup2 dup2 sub // [remainder, balance, withdraw_amt]
+    caller GET_SLOT() sstore // [balance, withdraw_amt]
+
+    pop // [withdraw_amt]
+    SEND_ETHER() // Send withdraw_amt to caller
+
+    0x00 0x00 return
+
+    ret:
+        0x00 0x00 revert
+}
+
+#define macro RECEIVE() = takes(0) returns(0) {
+    caller // [caller]
+    GET_SLOT() dup1 // [storage_slot, storage_slot]
+    sload // [current_balance, storage_slot]
+    callvalue add // [updated_balance, storage_slot]
+    swap1 sstore // store balanceOf[msg.sender] = updated_balance
+
+    0x00 0x00 return
 }

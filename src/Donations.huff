@@ -8,5 +8,26 @@
 #define function donated(address) payable returns(uint256)
 
 #define macro MAIN() = takes(0) returns(0) {
-    
+
+    returndatasize calldataload 0xe0 shr // [func selector]
+
+    dup1 __FUNC_SIG(donated) eq donatedImpl jumpi
+
+    receiveImpl jump  
+
+    donatedImpl:
+        0x04 calldataload // [addr]
+        0x00 mstore 0x20 0x00 sha3 // [slot] = sha3(addr)
+        sload // [donation_by_addr]
+        
+        0x00 mstore // store donations_by_addr in memory at offset 0
+        0x20 0x00 return
+
+    receiveImpl:
+        caller // [msg.sender]
+        0x00 mstore 0x20 0x00 sha3 // [slot] = [sha3(msg.sender)]
+        dup1 sload // [donation_by_addr, slot]
+        callvalue add // [updated_donations, slot]
+        swap1 sstore // []
+        0x00 0x00 return
 }

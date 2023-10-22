@@ -9,9 +9,46 @@
  *  NOTICE: The contract should revert when an unrecognized function is called
  */
 
- #define function makeContract() payable returns(address)
+#define function makeContract() payable returns(address)
 
-
- #define macro MAIN() = takes(0) returns(0) {
+#define macro MAKE_CONTRACT() = takes(0) returns(0) {
     
- }
+    /**
+     *  Note how `0x600a8060093d393df3620caffe3d5260203df3` is the CREATION CODE and not BYTECODE.
+     *
+     *  `0x600a8060093d393df3` is a program that returns the remaining 10 bytes `620caffe3d5260203df3`
+     *  which is the bytecode of the smart contract that follows the description: return `0xcaffe` when
+     *  called with any calldata.
+     *
+     *  From evm.codes: "Should deployment succeed, the new account's code is set to the return data 
+     *                  resulting from executing the initialisation code."
+     *
+    **/
+    0x600a8060093d393df3620caffe3d5260203df3 returndatasize mstore 
+    
+    /**
+     *  EVM works in 32 bytes slots for storing values. The bytecode to store is 19 bytes 
+     *  long so when it is stored in memory it is left padded with 13 bytes of zeros.
+     *
+     *  That is why the offset provided to the `create` opcode is 0x0d i.e. 13 and the size
+     *  is 0x13 i.e. 19 (note: 19 + 13 = 32 bytes).
+    **/
+    0x13 0x0d returndatasize // stack:[0x00, 0x0d (13 bytes), 0x13 (19 bytes)]
+    
+    create // stack:[address]
+
+    returndatasize mstore // stack:[] store created contract's address in memory at offset zero
+    0x20 returndatasize return // return the address
+}
+
+#define macro MAIN() = takes(0) returns(0) {
+
+    0x00 calldataload 0xe0 shr  // [func_sig]
+
+    dup1 __FUNC_SIG(makeContract) eq makeContractImpl jumpi
+    0x00 0x00 revert
+
+    makeContractImpl:
+        MAKE_CONTRACT()   
+}
+

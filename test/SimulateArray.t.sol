@@ -26,7 +26,7 @@ contract SimulateArrayTest is Test, NonMatchingSelectorHelper {
     }
 
     function testSimulateArray(uint256[] memory array) external {
-        vm.expectRevert(bytes4(keccak256("ZeroArray()")));
+        vm.expectRevert(abi.encode(bytes4(keccak256("ZeroArray()"))));
         simulateArray.popp();
 
         assertEq(simulateArray.length(), 0, "length is initially meant to be 0");
@@ -42,14 +42,14 @@ contract SimulateArrayTest is Test, NonMatchingSelectorHelper {
 
         for (uint256 i = array.length; i > 0; --i) {
             simulateArray.popp();
-            vm.expectRevert(bytes4(keccak256("OutOfBounds()")));
+            vm.expectRevert(abi.encode(bytes4(keccak256("OutOfBounds()"))));
             simulateArray.read(i - 1);
-            vm.expectRevert(bytes4(keccak256("OutOfBounds()")));
+            vm.expectRevert(abi.encode(bytes4(keccak256("OutOfBounds()"))));
             simulateArray.write(i - 1, array[i - 1]);
             assertEq(simulateArray.length(), i - 1, "Wrong length");
         }
 
-        vm.expectRevert(bytes4(keccak256("ZeroArray()")));
+        vm.expectRevert(abi.encode(bytes4(keccak256("ZeroArray()"))));
         simulateArray.popp();
     }
 

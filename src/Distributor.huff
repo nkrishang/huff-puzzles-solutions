@@ -10,9 +10,57 @@
  *  NOTICE: The contract should revert when an unrecognized function is called
  */
 
- #define function distribute(address[]) payable returns()
+#define function distribute(address[]) payable returns()
 
 
- #define macro MAIN() = takes(0) returns(0) {
-   
- }
+#define macro MAIN() = takes(0) returns(0) {
+    
+    returndatasize calldataload 0xe0 shr // [func_sig]
+
+    dup1 __FUNC_SIG(distribute) eq distributeImpl jumpi
+    0x00 0x00 revert
+
+    distributeImpl:
+        DISTRIBUTE()
+}
+
+#define macro SEND_ETHER() = takes(2) returns(0) {
+    // input: [value, address]
+
+    returndatasize returndatasize returndatasize returndatasize // [argOffset, argSize, retOffset, retSize, value, address]
+    dup5 dup7 gas // [gas, address, value, argOffset, argSize, retOffset, retSize, value, address]
+    call // [success, value, address]
+    swap2 pop pop // [success]
+
+    dup1 iszero fail jumpi // [success]
+    returndatasize lt success jumpi // []
+    
+    fail:
+        0x00 0x00 revert
+    success:
+}
+
+#define macro DISTRIBUTE() = takes(0) returns(0) {
+    
+    0x04 calldataload 0x04 add // [offset]
+    dup1 calldataload // [length, offset]
+
+    dup1 iszero rev jumpi // [length, offset] // If array length is 0, revert
+
+    dup1 callvalue div returndatasize // [current_index=0, value_per_recipient, length, offset]
+
+    loop:
+        dup3 dup2 eq ret jumpi // [current_index, value_per_recipient, length, offset]
+
+        0x01 add // [new_index, value_per_recipient, length, offset]
+        dup1 0x20 mul // [factor, new_index, value_per_recipient, length, offset]
+        dup5 add calldataload dup3 // [value_per_recipient, recipient, new_index, value_per_recipient, length, offset]
+        SEND_ETHER() // [new_index, value_per_recipient, length, offset]
+
+        loop jump
+
+    ret:
+        0x00 0x00 return
+    rev:
+        0x00 0x00 revert
+}
